@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/bollu/work/kavariance/build",
+  "command": "/usr/bin/c++ -I../include -I../include/tinyfort -fdiagnostics-color=always -g -Wall -std=gnu++17 -o CMakeFiles/ch2.out.dir/ch2.cpp.o -c /home/bollu/work/kavariance/ch2.cpp",
+  "file": "/home/bollu/work/kavariance/ch2.cpp"
+},
+{
+  "directory": "/home/bollu/work/kavariance/build",
+  "command": "/usr/bin/c++ -I../include -I../include/tinyfort -fdiagnostics-color=always -g -Wall -std=gnu++17 -o CMakeFiles/ch1.out.dir/ch1.cpp.o -c /home/bollu/work/kavariance/ch1.cpp",
+  "file": "/home/bollu/work/kavariance/ch1.cpp"
+}
+]
