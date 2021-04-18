@@ -4,6 +4,235 @@
 the name is a pun on [Kaveri](https://en.wikipedia.org/wiki/Kaveri), A `wav`/river goddess,
 and [Covariance](https://en.wikipedia.org/wiki/Covariance)
 
+Sources are:
+1. BasicSynth
+1. [textbook](https://ccrma.stanford.edu/~jos/pasp/)
+1. [demofox / blog under the ocean audio synth tutorials](http://demofox.org)
+
+# Notes: Ch1
+
+- sound: ?
+- Frequency (what musicians call pitch)
+- time interval between samples: **sample time** (note, this is a DELTA quantity!)
+- samples per second : frequency / *sample rate*.
+- sample rate determines what frequencies we can produce!
+- To represent a perodic signal, we need at min, one value above,
+  one value below zero. So we need at least two samples per cycle.
+  Thus, if I can produce *samples* at a rate of `fs`, I can produce
+  a periodic sinusoidal waveform at a rate of `fmax = fs/2`, to have values
+  above and below zero. This is the Nyquist shannon theorem.
+- Upper limit for sound: 20,000 Hz. So we use sampling frequency > 40,000 Hz.
+- Standard: 44,100 Hz.
+- Number of samples generated for a given *sound*: duration x sample rate.
+- Sample number: time in seconds x number of samples per second; `S = T fs`.
+  Intuitively, discretize time in sample space.
+- For sample number bit-size, we estimate that at a rate of 44,100 Hz, a 32 bit
+  number can represent `(1 << 31)/44100` sample numbers ~= 13.5 hours. Plenty
+  for any song making.
+- For amplitude bit-size, we want to take into account dynamic range of hearing.
+  We can't detect much difference across the range of hearing.
+  So we use decibels, which are logarithmic. 1db = smallest change in amplitude
+  humans can hear. `AdB = 20 log_10 (A1/A0)`. Each new bit we use will give us
+  `20 log_10(2/1) ~= 6 dB`. 16 bit value can hold `16x6 = 96 dB`. Music has a dynamic
+  range of around `100 dB`, so 16-bit works well for us.
+>  The range of hearing is quite
+> large, a ratio of about 10^12 to 1.  [Sid: I don't understand what this means].
+
+
+# Notes: Ch2
+- PhsAccum: phase
+- FrqValue: frequency
+- AmpValue: amplitude
+- SampleRate: `44100`.
+- SampleScale: convert AmpValue to output range: `(1<<15) - 1 = 32767`.
+
+# Ch4
+
+- `WAVE` file  is a `RIFF` file (resource interchange file format).
+- nested chunks of data.
+- chunk header:`8` byte [ charID:`4`byte / 4 chars; chunksize:`4` byte / integer-little-endian]
+- We consider `WAVE` to be a fixed length header, followed by variable length data.
+  (1) Write the header. (2) Write the samples. Each sample is one 16 bit word per channel.
+- For stereo output, two samples are written interleaved: [left channel; right channel]
+
+# Ch5: signal generator
+- To generate a signal we need to know (1) number of samples in one period and
+  (2) phase increment for one sample time / phase velocity `φ`.
+- Solving for (1): Recall that Period/`T`: time taken for waveform to repeat. Reciprocal of frequency; `T=1/f`.
+  Multiplying sample rate `fs` with time of one period `1/f` gives us number of samples
+  per period `fs/f`.
+- Solving for (2): The total phase is `2pi`. So the phase increment per sample time / phase velocity
+  is `φ = 2pi/(fs/f)`.
+- The value of the nth sample `s[n]` is equal to the peak volume at sample `n`
+  `An` (ie, the radius of the circle at that sample), times the sin of the phase angle at
+  sample n, `θ[n]`. `s[n] = A[n] sin(θ[n])`. The nth phase angle `θ[n]` is the phase
+  increment per sample / phase velocity times the number of samples:  `θ[n] = φ * n`
+
+- In total, this gives us `s[n] = A[n] θ[n] = A[n] sin(φ * n) = A[n] sin (2π/fs * f * n)`.
+  Implemented as:
+
+```cpp
+frqRad = twoPI / sampleRate;
+totalSamples = duration * sampleRate;
+for (n = 0; n < totalSamples; n++) {
+    sample[n] = volume * sin(frqRad*frequency*n);
+}
+```
+
+This can be optimised into:
+
+```cpp
+frqRad = twoPI / sampleRate;
+phaseIncr = frqRad * frequency;
+phase = 0; volume = 1;
+totalSamples = duration * sampleRate;
+for (n = 0; n < totalSamples; n++) {
+  sample[n] = volume * sin(phase);
+  phase += phaseIncr; // keep track of phase
+  if (phase >= twoPI) { phase -= twoPI; }
+}
+```
+
+- The duration value is specified in seconds and must be multiplied by the
+  sample rate to determine the number of samples.
+- Musicians express frequency (Hz) as a pitch or possibly as a number representing
+  a key on a keyboard.  Frequency can be calculated directly from the pitch or
+  key number. Each half-step between notes in the musical scale represents a
+  multiplication by the frequency ratio of `2^(1/12) (~1.059)` (a) 12 because
+  there are 12 notes: `A...G`, (b) base `2` because logarithm?. Given a known
+  pitch of frequency `f0` and the number of half-steps between pitches `h`, the
+  frequency of any pitch is (`f0·2^(h/12)`). 
+- Pitch is thus an *index* into a frequency table.
+- [`Include/SynthDefs.h`](https://github.com/bollu/basicsynth/blob/master/Include/SynthDefs.h)
+- [`Include/GenWave.h`](https://github.com/bollu/basicsynth/blob/master/Include/GenWave.h)
+- [`Src/Common/Global.cpp`](https://github.com/bollu/basicsynth/blob/master/Src/Common/Global.cpp)
+
+# Ch6: Envelope generators
+
+- ASR: attack sustain release. "release" is from analog synths where the envelope generator
+  was triggered when a key on the keeb was pressed.
+
+```cpp
+phaseIncr = frqRad * frequency;
+phase = 0;
+totalSamples = duration * sampleRate;
+attackTime = attackRate * sampleRate;
+decayTime = decayRate * sampleRate;
+decayStart = totalSamples – decayTime;
+if (attackTime > 0) {
+    envInc = peakAmp / attackTime; // derivative
+}
+volume = 0;
+for (n = 0; n < totalSamples; n++) {
+    if (n < attackTime || n > decayStart) {
+        volume += envInc;
+    } else if (n == attackTime) {
+         // get rid of roundoff err
+        volume = peakAmp;
+    } else if (n == decayStart) {
+        envInc = –volume / decayTime;
+    }
+    sample[n] = volume * sin(phase);
+    if ((phase += phaseIncr) >= twoPI)
+        phase -= twoPI;
+}
+```
+ 
+- A linear change in amplitude does NOT produce a linear change in perceived
+  loudness.
+- In order to double the loudness of a sound, we need to double the power of
+  the sound, and that requires an exponential increase in amplitude(!)
+
+- ADSR envelope: attack, decay, sustain, release.
+
+# Ch7: Complex waveforms
+
+- In the case of a square wave there are little “horns” where the transition
+  from peak to peak overshoots a little and then settles back. These effects
+  are the result of summing a finite series of partials rather than the
+  infinite series of partials specified by the Fourier transform. The ripple
+  and overshoot is called the **Gibbs Phenomenon** after the engineer who
+  identified the cause.
+- Eliminate the ripple by (1) using a large number of partials, and (2)
+  multiply the amplitude of all partials above the fundamental with a small
+  value called the **Lanczos sigma**: `σ = sin(x)/x`, where `x = nπ/M`, where `M`
+  is the total number of partials and `n` is the partial number.
+- FM paper: `The Synthesis of Complex Audio Spectra by Means of Frequency Modulation`.
+- in FM, one oscialltor varies another oscillator: `f(t) = Ac sin(ωc t + (Am sin(ωm t ))`
+  where `c` is for carrier, `m` is for modulator.
+- Modulator frequency is usually specified as a multiple of the carrier and
+  identified by the term c:m ratio. In general, integer multiples produce a
+  harmonic spectrum while non-integer multiples produce an inharmonic spectrum.
+- Fixed modulator amplitude affects different carriers differently. Eg, if
+  modulator amplitude is `50Hz`, and carrier is `100Hz`, then we get a band of
+  `50-150Hz`, ie, `50%` delta from the "center". On the other hand, if carrier
+  is a `1000Hz`, then we get a band of `950-1050Hz`, ie, `5%` delta from the
+  "center".
+- So, good way to talk about influence of modulator on carrier is in terms
+  of the **index of modulation**: `I = Δf/fm` where `Δf` is the maximum frequency
+  deviation, and `fm` is the modulator frequency.
+- Amplitude modulation: change amplitude by a sine wave.
+- White noise: noise of all frequencies. Just generate samples using a PRNG.
+- Low rumbly noise: generate noise, but hold the same sample for multiple sample times.
+  This makes it seem rumbly (!) TO TRY.
+
+# Ch8: Wavetable oscillators
+- Store table, linearly intepolate values that are not keyed (fractional indexes).
+- Use fixed-point for table.
+
+# Ch9: Mixing and panning
+- Mixer: literally keep an out variable for channels (one for mono, two for stereo)
+  and add in all contributions.
+- Panning: creating an apparent angle of displacement from a position directly in front
+  of the listener. We can pan by setting volume of left and right. This will create
+  a sense of spatiality of the sound. Usually, we do this by having a "pan value"
+  from the left, and scaling the left volume by `panLeft` and the right volume by `(1 - panLeft)`.
+- The linear calculation of the pan amplitude is simple and efficient but
+  produces the well-known “hole in the middle effect" (!) (TODO), where the
+  change in intensity causes us to perceive that the sound has moved
+  away/closer instead of left/right.
+- One way to perform a better calculation is to take a `sin` of apparent angle. The pan angle
+  can change from `-45` to `+45` degrees, with `0` being centered. We normalize the
+  angle to `[-1, +1]`. The amplitudes are calculated as:
+
+```cpp
+leftPan = sin((1 - panSet)/2 * PI/2);
+rightPan = sin((1 + panSet)/2 * PI/2);
+```
+
+# Ch10: Digital filters
+
+- Delay is represented by `z^(-1)`.
+- Adding up delayed sinusoids creates a phase shift in the output! `sin(a) + sin(b) = 2sin((a+b)/2)sin((a-b)/2)`.
+- Phase shift depends on sample rate and frequency of signal. If sample rate is `10kHz`,
+  a one sample delay is `0.0001` seconds of delay. For a signal of 100Hz, the time period
+  is `1/100 = 0.01` seconds. So, a delay of `0.0001` seconds in a total time
+  period of `0.01` seconds represents `2pi * 0.01/0.0001 = 3.6 degree` of phase
+  shift.
+- A signal at `1000Hz` has a time period of `1/1000 = 0.001` seconds. So a delay of `0.0001`
+  seconds in a total time period of `0.001` seconds represents a `2pi * 0.001 / 0.0001 = 36 degree`
+  phase shift. This phase shift causes a lower amplitude, and  causes destructive interference at higher
+  frequencies. So this implements a low-pass filter. For a high pass filter, we subtract the signal
+  with its previous timestep.
+
+- FIR: finite impulse response filter: `y[n] = ax[n] + bx[n-1]`.
+- IIR: infinite impulse response: `y[n] = bx[n] + ay[n-1]`.
+- Bi-quad filter: `y[n] = b0(x[n] - a1 y[n-1] - a2 y[n-2]) + b1 x[n-1] + b2 x[n-1]`.
+  That is, it has two degrees of "feedback" and two degrees of "history".
+- For low-pass FIR, calculate impulse response by convolving with windowed `sinc`.
+- Window a `sinc` by multiplying with a ["hamming window"/"hanning window"](https://en.wikipedia.org/wiki/Hann_function)
+- Bi-quad filter can be adapted for many tasks. For example, butterworth filter.
+- All-pass filter: filter that allows all frequencies, but shifts phase in a *frequency-dependent fashion*.
+  `v[n] = x[n] - g v[n-1]` and `y[n] = g v[n] + v[n-1]`.
+- Dynamic filter:
+
+# Ch11: Delay lines
+
+- Delay ~ FIFO
+  
+
+# DemoFox tutorials
+
 #### ch2 code
 
 ```cpp
@@ -692,6 +921,3 @@ int main(int argc, char **argv)
 }
 ```
 
-#### Physical audio signal processing
-
-- [textbook](https://ccrma.stanford.edu/~jos/pasp/)

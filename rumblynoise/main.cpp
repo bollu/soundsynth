@@ -155,7 +155,7 @@ int playBufferInt16(float *audio, int numSamples, int rate, int channels) {
             }
     */
 
-    if ((pcm = snd_pcm_writei(pcm_handle, buff, frames)) == -EPIPE) {
+    if (snd_pcm_writei(pcm_handle, buff, frames) == -EPIPE) {
       printf("XRUN.\n");
       snd_pcm_prepare(pcm_handle);
     } else if (pcm < 0) {
@@ -229,29 +229,19 @@ int main() {
   samples.resize(c_numSamples);
   
 
-  std::vector<CKarplusStrongStringPluck> notes;
-  notes.push_back(CKarplusStrongStringPluck(CalcFrequency(3, 0),
-              float(c_sampleRate), 0.996f));
-  notes.push_back(CKarplusStrongStringPluck(CalcFrequency(3, 1),
-              float(c_sampleRate), 0.996f));
-  notes.push_back(CKarplusStrongStringPluck(CalcFrequency(3, 0),
-              float(c_sampleRate), 0.996f));
 
+  std::vector<float> rs(c_numSamples);
   for (int i = 0; i < c_numSamples; ++i) {
-    samples[i] = 0;
-    if (i < c_numSamples/42) {
-        samples[i] += notes[0].GenerateSample();
-    } else if (i < c_numSamples/3){
-        samples[i] += notes[0].GenerateSample();
-        samples[i] += notes[1].GenerateSample();
-    } else {
-        samples[i] += notes[0].GenerateSample();
-        samples[i] += notes[1].GenerateSample();
-        samples[i] += notes[2].GenerateSample();
-    }
-    // for (CKarplusStrongStringPluck &n : notes) { samples[i] += n.GenerateSample(); }
-    // to keep from clipping
-    samples[i] *= 0.5f;
+      rs[i] = rand() % RAND_MAX;
+  }
+  
+  // low pass a white noise for rumbly noise.
+  // recall that low pass ~ exponential averaging.
+  // https://en.wikipedia.org/wiki/Low-pass_filter#Discrete-time_realization
+  samples[0] = rs[0];
+  const float holdon = 0.97;
+  for(int i = 1; i < c_numSamples; ++i) {
+      samples[i] =  holdon * samples[i-1]  + (1 - holdon) * rs[i];
   }
 
   // generate samples

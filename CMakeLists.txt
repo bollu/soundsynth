@@ -13,7 +13,9 @@ set_target_properties(ch1.out PROPERTIES CXX_STANDARD 17)
 add_executable(ch2.out ch2.cpp)
 set_target_properties(ch2.out PROPERTIES CXX_STANDARD 17)
 
-add_subdirectory(ch3)
+add_subdirectory(karlplusstrong)
+add_subdirectory(whitenoise)
+add_subdirectory(rumblynoise)
 
 # add_library(fort src/libfort.c)
 # target_link_libraries(tinyfort ${LLVM_LIBS}  -lstdc++ ${Z3_LIBS})
