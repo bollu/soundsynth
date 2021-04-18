@@ -198,6 +198,7 @@ public:
     // get our sample to return
     // float ret = m_buffer[ix];
     
+    // pan sound by mixing left and right buffer
     float l = (pan + 1)/2;
     out[0] = l * m_buffer[ix];
     out[1] = (1 - l) * m_buffer[ix];
