@@ -19,6 +19,67 @@ Written by Alan Wolfe 6/2012
 #define CLAMP(value,min,max) {if(value < min) { value = min; } else if(value > max) { value = max; }}
 typedef short int16;
 
+//calculate the frequency of the specified note.
+//fractional notes allowed!
+float CalcFrequency(float fOctave,float fNote)
+/*
+	Calculate the frequency of any note!
+	frequency = 440×(2^(n/12))
+
+	N=0 is A4
+	N=1 is A#4
+	etc...
+
+	notes go like so...
+	0  = A
+	1  = A#
+	2  = B
+	3  = C
+	4  = C#
+	5  = D
+	6  = D#
+	7  = E
+	8  = F
+	9  = F#
+	10 = G
+	11 = G#
+*/
+	return (float)(440*pow(2.0,((double)((fOctave-4)*12+fNote))/12.0));
+}
+
+void NormalizeAudioData(float *pData,int nNumSamples)
+{
+	//figure out what the maximum and minimum value is
+	float fMaxValue = pData[0];
+	float fMinValue = pData[0];
+	for(int nIndex = 0; nIndex < nNumSamples; ++nIndex)
+	{
+		if(pData[nIndex] > fMaxValue)
+		{
+			fMaxValue = pData[nIndex];
+		}
+
+		if(pData[nIndex] < fMinValue)
+		{
+			fMinValue = pData[nIndex];
+		}
+	}
+	
+	//calculate the center and the height
+	float fCenter = (fMinValue + fMaxValue) / 2.0f;
+	float fHeight = fMaxValue - fMinValue;
+
+	//center and normalize the samples
+	for(int nIndex = 0; nIndex < nNumSamples; ++nIndex)
+	{
+		//center the samples
+		pData[nIndex] -= fCenter;
+
+		//normalize the samples
+		pData[nIndex] /= fHeight;
+	}
+}
+
 
 //�32,768 to 32,767
 void ConvertFloatToAudioSample16(float fFloat, int16 &nOut)
