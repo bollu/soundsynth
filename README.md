@@ -228,8 +228,61 @@ rightPan = sin((1 + panSet)/2 * PI/2);
 
 # Ch11: Delay lines
 
-- Delay ~ FIFO
-  
+- Delay ~ FIFO.
+- Accoustics: delay line ~ echo.
+- attenuator after delay ~ loss of signal energy in the echo.
+- `total time delay = length of delay line * sample time.`
+- can tap from the middle of a delay line as well.
+- use ring buffer.
+
+- Resonator: allow signal in delay line to recirculate
+
+```cpp
+out = delayBuf[delayIndex] * decay;
+delayBuf[delayIndex] = in + out;
+if (++delayIndex >= delayLen)
+delayIndex = 0;
+```
+- Allpass delay: TODO (???)
+- Variable delay: vary delay time while adding and removing samples. We keep the length
+ of the delay buffer constant, but we move the read tap around.
+
+```cpp
+delayRange = (delayMax - delayMin) / 2;
+delayMid = delayMin + delayRange;
+delayBuf[delayWrite] = in; // write data in
+if (++delayWrite >= delayLen) { delayWrite -= delayLen; } // go back 
+delayOffset = delayMid + (delayRange * sin(phase));
+if ((delayRead = delayWrite – delayOffset) < 0) { delayRead += delayLen; }
+out = delayBuf[delayRead];
+```
+
+- Problem: index will move by fractional amout. This creates an artefact called
+  [**zipper noise**](https://www.sweetwater.com/insync/zipper-noise)
+  which is caused by quantization. So we need to LERP.
+
+```cpp
+delayOffset = delayMid + (delayRange * sin(phase));
+delayRead = delayWrite – delayOffset;
+if (delayRead < 0)
+delayRead += delayLen;
+readInt = floor(delayRead);
+readFract = delayRead – readInt;
+if (delayOffset < 1)
+delayBuf[delayWrite] = in;
+out = delayBuf[readInt] * (1 – readFract);
+if (--readInt < 0)
+readInt += delayLen;
+out += delayBuf[readInt] * readFract;
+if (delayOffset >= 1)
+delayBuf[delayWrite] = in;
+if (++delayWrite >= delayLen)
+delayWrite -= delayLen;
+out *= decay;
+```
+
+
+
 
 # DemoFox tutorials
 
