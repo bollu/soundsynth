@@ -174,7 +174,7 @@ for (n = 0; n < totalSamples; n++) {
 - Amplitude modulation: change amplitude by a sine wave.
 - White noise: noise of all frequencies. Just generate samples using a PRNG.
 - Low rumbly noise: generate noise, but hold the same sample for multiple sample times.
-  This makes it seem rumbly (!) TO TRY.
+  This makes it seem rumbly (!). [bollu: alternatively, run a low-pass filter].
 
 # Ch8: Wavetable oscillators
 - Store table, linearly intepolate values that are not keyed (fractional indexes).
@@ -921,3 +921,7 @@ int main(int argc, char **argv)
 }
 ```
 
+# TODO
+- rainmood sounds! So, lightning crack, rumbling.
+- fireplace.
+- coffee shop clinking?
