@@ -8,6 +8,7 @@ Sources are:
 1. BasicSynth
 1. [textbook](https://ccrma.stanford.edu/~jos/pasp/)
 1. [demofox / blog under the ocean audio synth tutorials](http://demofox.org)
+1. [Making granular audio synthesis super long using PaulStretch](https://news.ycombinator.com/item?id=16534258)
 
 # Notes: Ch1
 
@@ -281,7 +282,65 @@ delayWrite -= delayLen;
 out *= decay;
 ```
 
+# Ch12: Reverb
 
+- Furthermore, room reverberation requires a buildup of reflected sounds over
+  time. For that we need to combine multiple resonators at different time
+  delays. When the delay lengths differ, their combination produces an
+  increasing density of sounds and will also tend to mask the ringing effect.
+  When the delay times are relative primes, the resonant peak of one delay line
+  is different from the others and will attenuate the frequencies that the
+  other resonators amplify.
+
+-  Schroeder reverb: This reverb uses a set of parallel comb filters plus two
+   all- pass filters in series.
+-  as the amount of reverb and the reverb time increase, the metallic ringing
+   sound becomes more noticeable. Another noticeable effect of this design is a
+   fluttering sound that shows up when very short sounds with sharp attack
+   transients are used. 
+
+
+
+# Ch13: Flange
+
+> Flanging is a technique developed in analog recording that adds a delayed
+> signal to the original signal by running two tape recorders in parallel. The
+> speed of each tape recorder is alternately varied by touching the flange of the
+> tape reel, momentarily slowing down the recorder.
+
+> flange: A flange is a protruded ridge, lip or rim, either external or
+> internal, that serves to increase strength
+
+- [Phaser v/s Flanger](https://www.youtube.com/watch?v=Ici_YOVDl_0)
+
+
+# FM paper
+
+> This frequency modulation technique, although not a
+> physical model for natural sound, is shown to be a very 
+> powerful perceptual model for at least some.
+
+> energy is stolen from the carrier distributed amongst
+> an increasing number of side frequencies.
+
+> amplitude is determined by $J_n(I)$, bessel functions
+> of the first kind, where the input $I = d/m$ is the modulation index, 
+> ratio of peak deviation of frequency to total base frequency of the carrier.
+> The total bandwidth is approximatiely `2(d+m)`, where `d` is peak deviation
+> and `m` is frequency of the modulating wave.
+
+> The special richnessof this FM technique lies in the
+> fact that there are ratios of carrier, modulating frequencies
+> and values of the index that produces sideband components which
+> fall in the negative frequency domain of the spectrum (?) (what does this mean?)
+> TODO: take a course on this stuff!
+> The negative components reflect around 0Hz and "mix" with the components
+> in the +ve domain.
+
+> Eg. let `c =100Hz, m = 100Hz, I = 4`.
+
+> Since we have `c/m = 1`, or more generally a rational number, we have `c/m = N1/N2`
+> where `N1` and `N2` are integers, which results in harmonic spectra.
 
 
 # DemoFox tutorials
@@ -973,6 +1032,7 @@ int main(int argc, char **argv)
     WriteWaveFile("out.wav", samplesInt, c_numChannels, c_sampleRate);
 }
 ```
+
 
 # TODO
 - rainmood sounds! So, lightning crack, rumbling.
