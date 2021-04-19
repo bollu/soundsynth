@@ -1,3 +1,4 @@
+// drums: https://ccrma.stanford.edu/~sdill/220A-project/drums.html
 // FM synthesis from "the synthesis of complex audio spectra by means of
 // frequency modulation
 #include <alsa/asoundlib.h>
@@ -439,7 +440,7 @@ FM mkWoodDrum(float freq, float startTime, float duration, float samplerate) {
   fm.noteDuration = 1;
   fm.carrierFreq = freq;
   // 200 / 280 = 
-  fm.modulatingFreq = freq * 55.0 / 80.0;
+  fm.modulatingFreq = freq;
   fm.modulationIndex1 = 0;
   fm.modulationIndex2 = 25;
 
@@ -447,7 +448,7 @@ FM mkWoodDrum(float freq, float startTime, float duration, float samplerate) {
 
   fm.amplitudeEnvelope.attackDuration = 0;
   fm.amplitudeEnvelope.attackEndVal = 0.9;
-  fm.amplitudeEnvelope.decayDuration = 0.05;
+  fm.amplitudeEnvelope.decayDuration = 0.5;
   fm.amplitudeEnvelope.decayEndVal = 1;
   fm.amplitudeEnvelope.decayInterpolator = easeInOutExpo;
   fm.amplitudeEnvelope.sustainDuration = 0;
@@ -455,14 +456,13 @@ FM mkWoodDrum(float freq, float startTime, float duration, float samplerate) {
   fm.amplitudeEnvelope.releaseDuration = 0.9;
   fm.amplitudeEnvelope.releaseInterpolator = easeExpOut;
 
-
   fm.modulationIndexEnvelope.attackDuration = 0;
   fm.modulationIndexEnvelope.attackEndVal = 1;
   fm.modulationIndexEnvelope.decayDuration = 0;
   fm.modulationIndexEnvelope.decayEndVal = 1;
   fm.modulationIndexEnvelope.sustainDuration = 0;
   fm.modulationIndexEnvelope.sustainEndVal = 1;
-  fm.modulationIndexEnvelope.releaseDuration = 0.02;
+  fm.modulationIndexEnvelope.releaseDuration = 0.2;;
   return fm;
 }
 
@@ -479,8 +479,9 @@ int main() {
   std::vector<FM> fms;
   // fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
-  fms.push_back(mkDrum(CalcFrequency(2, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
-  // fms.push_back(mkWoodDrum(CalcFrequency(2, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/c_sampleRate, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkDrum(CalcFrequency(2, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  fms.push_back(mkWoodDrum(CalcFrequency(1, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate * 2, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
