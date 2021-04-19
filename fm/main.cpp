@@ -1,4 +1,5 @@
-// Drums from the karlpluss strong paper.
+// FM synthesis from "the synthesis of complex audio spectra by means of
+// frequency modulation
 #include <alsa/asoundlib.h>
 #include <inttypes.h>
 #include <math.h>
@@ -243,6 +244,17 @@ private:
   float freq;
 };
 
+// k, begin, end;
+using interpolator = float(float, float, float);
+
+float lerp(float k, float begin, float end) {
+    return (1 - k ) * begin + k * end;
+}
+
+float easeExpOut(float k, float begin, float end) {
+    return lerp(k == 1 ? k : 1 - pow(2, -10 * k), begin, end);
+}
+
 struct Envelope {
     float attackEndVal; 
     float attackDuration;
@@ -251,25 +263,27 @@ struct Envelope {
     float sustainDuration;
     float sustainEndVal;
     float releaseDuration;
+    interpolator *releaseInterpolator = &lerp;
+
 
     float val(float t) {
-        if (t <= attackDuration) {
+        if (attackDuration != 0 && t <= attackDuration) {
             return (t/attackDuration) * attackEndVal;
         };
         t -= attackDuration;
-        if (t <= decayDuration) {
+        if (decayDuration != 0 && t <= decayDuration) {
             float k = t/decayDuration;
             return (1-k)*attackEndVal + k*decayEndVal;
         }
         t -= decayDuration;
-        if (t <= sustainDuration) {
+        if (sustainDuration != 0 && t <= sustainDuration) {
             float k = t/sustainDuration;
             return (1 - k) * decayEndVal + k*sustainEndVal;
         }
         t -= sustainDuration;
         if (t <= releaseDuration) {
             float k = t/releaseDuration;
-            return (1-k)*sustainEndVal;
+            return releaseInterpolator(k, sustainEndVal, 0);
         }
         return 0;
     }
@@ -284,14 +298,15 @@ struct FM {
     float carrierFreq; // P5
     float modulatingFreq; // P6
     float modulationIndex1; // P7. 
-    float modulationIndex2; // P7. 
+    float modulationIndex2; // P8. 
     Envelope amplitudeEnvelope;
     Envelope modulationIndexEnvelope;
     float sampleRate;
 
-    float value(int t) {
+    float value(float t) {
         if (t < startTime) { return 0; }
         t -= startTime; 
+        t /= noteDuration;
         const float modAmp = modulationIndex1 + 
             (modulationIndex2 - modulationIndex1) * modulationIndexEnvelope.val(t/ sampleRate);
         return amplitudeEnvelope.val(t/sampleRate) *
@@ -300,26 +315,80 @@ struct FM {
 };
 
 FM mkBrass(float freq, float startTime, float duration, float samplerate) {
-  FM brass;
-  brass.startTime = 1100;
-  brass.noteDuration = 1000;
-  brass.carrierFreq = freq;
-  brass.modulatingFreq = brass.carrierFreq;
-  brass.modulationIndex2 = 5;
-  brass.modulationIndex1 = 0;
+  FM fm;
+  fm.startTime = startTime;
+  fm.noteDuration = duration;
+  fm.carrierFreq = freq;
+  fm.modulatingFreq = fm.carrierFreq;
+  fm.modulationIndex1 = 0;
+  fm.modulationIndex2 = 5;
 
-  brass.sampleRate = samplerate;
+  fm.sampleRate = samplerate;
 
-  brass.amplitudeEnvelope.attackDuration = 0.3;
-  brass.amplitudeEnvelope.attackEndVal = 1;
-  brass.amplitudeEnvelope.decayDuration = 0.3; // 2/6 = 1/3
-  brass.amplitudeEnvelope.decayEndVal = 0.75;
-  brass.amplitudeEnvelope.sustainDuration = 0.6;
-  brass.amplitudeEnvelope.sustainDuration = 0.6;
-  brass.amplitudeEnvelope.sustainEndVal = 0.6;
-  brass.amplitudeEnvelope.releaseDuration = 0.3;
-  brass.modulationIndexEnvelope = brass.amplitudeEnvelope;
-  return brass;
+  fm.amplitudeEnvelope.attackDuration = 0.3;
+  fm.amplitudeEnvelope.attackEndVal = 1;
+  fm.amplitudeEnvelope.decayDuration = 0.3; // 2/6 = 1/3
+  fm.amplitudeEnvelope.decayEndVal = 0.75;
+  fm.amplitudeEnvelope.sustainDuration = 0.6;
+  fm.amplitudeEnvelope.sustainEndVal = 0.6;
+  fm.amplitudeEnvelope.releaseDuration = 0.3;
+  fm.modulationIndexEnvelope = fm.amplitudeEnvelope;
+  return fm;
+}
+
+FM mkReed(float freq, float startTime, float duration, float samplerate) {
+  FM fm;
+  fm.startTime = startTime;
+  fm.noteDuration = duration;
+  fm.carrierFreq = freq;
+  // 900 carrier -> 600  modulator
+  fm.modulatingFreq = freq*2/3;
+  fm.modulationIndex1 = 4;
+  fm.modulationIndex2 = 2;
+
+  fm.sampleRate = samplerate;
+
+  fm.amplitudeEnvelope.attackDuration = 0.1;
+  fm.amplitudeEnvelope.attackEndVal = 1;
+  fm.amplitudeEnvelope.decayDuration = 0; // 2/6 = 1/3
+  fm.amplitudeEnvelope.decayEndVal = 1;
+  fm.amplitudeEnvelope.sustainDuration = 0.4;
+  fm.amplitudeEnvelope.sustainEndVal = 1;
+  fm.amplitudeEnvelope.releaseDuration = 0.05;
+
+  fm.modulationIndexEnvelope.attackDuration = 0.1;
+  fm.modulationIndexEnvelope.attackEndVal = 1;
+  fm.modulationIndexEnvelope.decayDuration = 0;
+  fm.modulationIndexEnvelope.decayEndVal = 1;
+  fm.modulationIndexEnvelope.sustainDuration = 0.6; // hold for full life of woodwind.
+  fm.modulationIndexEnvelope.sustainEndVal = 1;
+  fm.modulationIndexEnvelope.releaseDuration = 0.05;
+  return fm;
+}
+
+FM mkBell(float freq, float startTime, float duration, float samplerate) {
+  FM fm;
+  fm.startTime = startTime;
+  fm.noteDuration = 1;
+  fm.carrierFreq = freq;
+  // 200 / 280 = 
+  fm.modulatingFreq = freq * 1.4;
+  fm.modulationIndex1 = 0;
+  fm.modulationIndex2 = 4;
+
+  fm.sampleRate = samplerate;
+
+  fm.amplitudeEnvelope.attackDuration = 0;
+  fm.amplitudeEnvelope.attackEndVal = 1;
+  fm.amplitudeEnvelope.decayDuration = 0;
+  fm.amplitudeEnvelope.decayEndVal = 1;
+  fm.amplitudeEnvelope.sustainDuration = 0;
+  fm.amplitudeEnvelope.sustainEndVal = 1;
+  fm.amplitudeEnvelope.releaseDuration = 15;
+  fm.amplitudeEnvelope.releaseInterpolator = easeExpOut;
+
+  fm.modulationIndexEnvelope = fm.amplitudeEnvelope;
+  return fm;
 }
 
 int main() {
@@ -332,11 +401,19 @@ int main() {
   std::vector<float> samples;
 
   std::vector<FM> fms;
-  fms.push_back(mkBrass(CalcFrequency(3, 1), 0, c_sampleRate, c_sampleRate));
+  // fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate * 2, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
+  // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
+  // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/2*c_sampleRate, /*duration=*/1, c_sampleRate));
 
-  int c_numSamples = 1.8e5;
+  int c_numSamples = c_sampleRate * 8;
   for (int i = 0; i < c_numSamples; ++i) {
-      for(FM fm : fms) { samples.push_back(fm.value(i)); };
+      float out = 0;
+      for(FM fm : fms) { out += fm.value(i); };
+      samples.push_back(out);
   }
 
   // for (int i = 0; i < 0.5*c_numSamples; ++i) {
