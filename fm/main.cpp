@@ -401,7 +401,7 @@ int main() {
   std::vector<float> samples;
 
   std::vector<FM> fms;
-  // fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate * 2, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
@@ -409,7 +409,7 @@ int main() {
   // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/2*c_sampleRate, /*duration=*/1, c_sampleRate));
 
-  int c_numSamples = c_sampleRate * 8;
+  int c_numSamples = c_sampleRate * 20;
   for (int i = 0; i < c_numSamples; ++i) {
       float out = 0;
       for(FM fm : fms) { out += fm.value(i); };
