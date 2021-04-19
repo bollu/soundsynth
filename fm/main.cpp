@@ -255,11 +255,20 @@ float easeExpOut(float k, float begin, float end) {
     return lerp(k == 1 ? k : 1 - pow(2, -10 * k), begin, end);
 }
 
+float easeInOutExpo(float k, float begin, float end) {
+    k =  k == 0 ? 0
+        : k == 1 ? 1
+        : k < 0.5 ? pow(2, 20 * k - 10) / 2
+        : (2 - pow(2, -20 * k + 10)) / 2;
+    return lerp(k, begin, end);
+}
+
 struct Envelope {
     float attackEndVal; 
     float attackDuration;
     float decayEndVal;
     float decayDuration;
+    interpolator *decayInterpolator = &lerp;
     float sustainDuration;
     float sustainEndVal;
     float releaseDuration;
@@ -273,7 +282,7 @@ struct Envelope {
         t -= attackDuration;
         if (decayDuration != 0 && t <= decayDuration) {
             float k = t/decayDuration;
-            return (1-k)*attackEndVal + k*decayEndVal;
+            return decayInterpolator(k, attackEndVal, decayEndVal);
         }
         t -= decayDuration;
         if (sustainDuration != 0 && t <= sustainDuration) {
@@ -391,6 +400,33 @@ FM mkBell(float freq, float startTime, float duration, float samplerate) {
   return fm;
 }
 
+FM mkDrum(float freq, float startTime, float duration, float samplerate) {
+  FM fm;
+  fm.startTime = startTime;
+  fm.noteDuration = 1;
+  fm.carrierFreq = freq;
+  // 200 / 280 = 
+  fm.modulatingFreq = freq * 1.4;
+  fm.modulationIndex1 = 0;
+  fm.modulationIndex2 = 2;
+
+  fm.sampleRate = samplerate;
+
+  fm.amplitudeEnvelope.attackDuration = 0;
+  fm.amplitudeEnvelope.attackEndVal = 0.1;
+  fm.amplitudeEnvelope.decayDuration = 0.05;
+  fm.amplitudeEnvelope.decayEndVal = 1;
+  fm.amplitudeEnvelope.decayInterpolator = easeInOutExpo;
+  fm.amplitudeEnvelope.sustainDuration = 0;
+  fm.amplitudeEnvelope.sustainEndVal = 1;
+  fm.amplitudeEnvelope.releaseDuration = 0.9;
+  fm.amplitudeEnvelope.releaseInterpolator = easeExpOut;
+
+  fm.modulationIndexEnvelope = fm.amplitudeEnvelope;
+  return fm;
+}
+
+
 int main() {
   // sound format parameters
   const int c_sampleRate = 44100;
@@ -401,8 +437,9 @@ int main() {
   std::vector<float> samples;
 
   std::vector<FM> fms;
-  fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
-  fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  fms.push_back(mkDrum(CalcFrequency(2, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate * 2, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
