@@ -413,7 +413,7 @@ FM mkDrum(float freq, float startTime, float duration, float samplerate) {
   fm.sampleRate = samplerate;
 
   fm.amplitudeEnvelope.attackDuration = 0;
-  fm.amplitudeEnvelope.attackEndVal = 0.1;
+  fm.amplitudeEnvelope.attackEndVal = 0.8;
   fm.amplitudeEnvelope.decayDuration = 0.05;
   fm.amplitudeEnvelope.decayEndVal = 1;
   fm.amplitudeEnvelope.decayInterpolator = easeInOutExpo;
@@ -422,7 +422,47 @@ FM mkDrum(float freq, float startTime, float duration, float samplerate) {
   fm.amplitudeEnvelope.releaseDuration = 0.9;
   fm.amplitudeEnvelope.releaseInterpolator = easeExpOut;
 
-  fm.modulationIndexEnvelope = fm.amplitudeEnvelope;
+  fm.modulationIndexEnvelope.attackDuration = 0;
+  fm.modulationIndexEnvelope.attackEndVal = 1;
+  fm.modulationIndexEnvelope.decayDuration = 0;
+  fm.modulationIndexEnvelope.decayEndVal = 1;
+  fm.modulationIndexEnvelope.sustainDuration = 0;
+  fm.modulationIndexEnvelope.sustainEndVal = 1;
+  fm.modulationIndexEnvelope.releaseDuration = 15;
+  fm.modulationIndexEnvelope.releaseInterpolator = easeExpOut;
+  return fm;
+}
+
+FM mkWoodDrum(float freq, float startTime, float duration, float samplerate) {
+  FM fm;
+  fm.startTime = startTime;
+  fm.noteDuration = 1;
+  fm.carrierFreq = freq;
+  // 200 / 280 = 
+  fm.modulatingFreq = freq * 55.0 / 80.0;
+  fm.modulationIndex1 = 0;
+  fm.modulationIndex2 = 25;
+
+  fm.sampleRate = samplerate;
+
+  fm.amplitudeEnvelope.attackDuration = 0;
+  fm.amplitudeEnvelope.attackEndVal = 0.9;
+  fm.amplitudeEnvelope.decayDuration = 0.05;
+  fm.amplitudeEnvelope.decayEndVal = 1;
+  fm.amplitudeEnvelope.decayInterpolator = easeInOutExpo;
+  fm.amplitudeEnvelope.sustainDuration = 0;
+  fm.amplitudeEnvelope.sustainEndVal = 1;
+  fm.amplitudeEnvelope.releaseDuration = 0.9;
+  fm.amplitudeEnvelope.releaseInterpolator = easeExpOut;
+
+
+  fm.modulationIndexEnvelope.attackDuration = 0;
+  fm.modulationIndexEnvelope.attackEndVal = 1;
+  fm.modulationIndexEnvelope.decayDuration = 0;
+  fm.modulationIndexEnvelope.decayEndVal = 1;
+  fm.modulationIndexEnvelope.sustainDuration = 0;
+  fm.modulationIndexEnvelope.sustainEndVal = 1;
+  fm.modulationIndexEnvelope.releaseDuration = 0.02;
   return fm;
 }
 
@@ -440,6 +480,7 @@ int main() {
   // fms.push_back(mkBrass(CalcFrequency(3, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkBell(CalcFrequency(4, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   fms.push_back(mkDrum(CalcFrequency(2, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
+  // fms.push_back(mkWoodDrum(CalcFrequency(2, 1), /*start=*/0, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(3, 1), /*start=*/c_sampleRate * 2, /*duration=*/2, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
   // fms.push_back(mkReed(CalcFrequency(2, 8), /*start=*/c_sampleRate, /*duration=*/0.5, c_sampleRate));
