@@ -9,6 +9,12 @@ Sources are:
 1. [textbook](https://ccrma.stanford.edu/~jos/pasp/)
 1. [demofox / blog under the ocean audio synth tutorials](http://demofox.org)
 1. [Making granular audio synthesis super long using PaulStretch](https://news.ycombinator.com/item?id=16534258)
+1. [Synth secrets](https://github.com/micjamking/synth-secrets)
+1. [NES APU](https://wiki.nesdev.com/w/index.php/APU)
+
+#### TODO
+
+- [use boss dr110 drum sound synth](https://github.com/leviathant/BossDR110/blob/92b1d2be8b98c9aa6fc2c867ad053364118278a8/dr110_synth.js)
 
 # Notes: Ch1
 
