@@ -1,8 +1,10 @@
 # Kavariance
 
+
 `bollu` learns digital audio synthesis from [the blog at the bottom of the sea](https://blog.demofox.org/2012/05/14/diy-synthesizer-chapter-1-sound-output/).
 the name is a pun on [Kaveri](https://en.wikipedia.org/wiki/Kaveri), A `wav`/river goddess,
 and [Covariance](https://en.wikipedia.org/wiki/Covariance)
+
 
 Sources are:
 1. BasicSynth
@@ -14,6 +16,7 @@ Sources are:
 
 #### TODO
 
+- Remake ableton music making tutorial? https://learningmusic.ableton.com/make-beats/make-beats.html
 - [use boss dr110 drum sound synth](https://github.com/leviathant/BossDR110/blob/92b1d2be8b98c9aa6fc2c867ad053364118278a8/dr110_synth.js)
 
 # Notes: Ch1
